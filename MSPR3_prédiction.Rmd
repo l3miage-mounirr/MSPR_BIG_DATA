@@ -1,0 +1,43 @@
+```{r}
+# chargement des librairies
+library(xlsx)
+library(caTools)
+
+# Lecture du dataset
+election=read.xlsx(file="dataset_version_final.xlsx",sheetIndex=1,header=T)
+
+# On partitionne de façon aléatoire et on prend 80% pour l'apprentissage et 20% pour le test
+set.seed(38) #Pour avoir toujours les mêmes résultats
+election.split <- sample.split(election, SplitRatio = 0.8)
+election.app=election[election.split,]
+election.test=election[!election.split,]
+
+# Transformation des variable contenant des chaînes de caractères en facteur
+election.app$villes <- as.factor(election.app$villes)
+election.test$villes <- as.factor(election.test$villes)
+
+election.app$orientation_politique <- as.factor(election.app$orientation_politique)
+election.test$orientation_politique <- as.factor(election.test$orientation_politique)
+
+# Régression linéaire : on veut prédire le nombre de voix en fonction des autres variables
+reg<-lm(nb_voix~annee + villes + nb_de + population + revenus_activite + Impots + pib_par_habitant + orientation_politique + nb_faits_delinquance,data=election.app)
+summary(reg)
+
+#Prediction sur les données de test à partir du modèle de régression
+fit1=predict(reg,election.test)
+
+# Erreur absolue moyenne
+mean(abs(fit1-election.test$nb_voix))
+summary(election.test$nb_voix)
+
+# L'erreur obtenue est d'environ 15847 et la moyenne est d'environ 27417
+# donc le pouvoir prédictif de notre modèle est mieux que si l'on utilisait la moyenne.
+
+
+library(leaps)
+choix<-regsubsets(nb_voix~.,data=election.app,nbest=1,nvmax=11,method = "backward")
+plot(choix,scale="bic")
+
+
+
+```
